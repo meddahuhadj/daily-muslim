@@ -1452,9 +1452,7 @@
     <div id="bc-live" class="hidden">
       <div class="card center">
         <h3 id="bc-mosqueName" style="color:var(--fg); font-weight:750"></h3>
-        <h3 data-i18n="bc_code">Code de session</h3>
         <div class="ruh" aria-hidden="true">۞</div>
-        <div class="code-badge" id="bc-code">------</div>
         <img class="qr" id="bc-qr" alt="QR code" />
         <p id="bc-joinUrl" class="muted" style="font-size:.8rem; word-break:break-all; margin:6px 0 0"></p>
         <p id="bc-shareWarn" class="hidden" style="font-size:.78rem; color:var(--warn); font-weight:650; margin:8px 0 0"
@@ -1712,7 +1710,7 @@ const I18N = {
     home_p:"Aucune installation, aucun compte. Choisissez votre rôle pour suivre le prêche en direct.",
     home_listen:"J'écoute (fidèle)",home_broadcast:"Je diffuse (imam / opérateur)",
     home_note:"Chacun reçoit la traduction en privé, dans ses écouteurs. Rien n'est diffusé en audio dans la salle. Barakallahu fikum.",
-    bc_setup_h:"Démarrer une session de khutbah",bc_setup_p:"Un code + un QR code seront générés pour que les fidèles puissent suivre le prêche.",
+    bc_setup_h:"Démarrer une session de khutbah",bc_setup_p:"Un QR code sera généré pour que les fidèles puissent suivre le prêche.",
     bc_create:"Créer la session",bc_nokey:"Clé Gemini absente : mode dégradé (arabe diffusé sans traduction).",
     bc_code:"Code de session",bc_copylink:"Copier le lien",bc_share:"Partager",bc_listeners:"auditeurs",
     bc_mode:"Mode de captation",mode_speech:"Reconnaissance navigateur",mode_audio:"Audio → serveur",mode_manual:"Manuel",
@@ -1739,7 +1737,7 @@ const I18N = {
     home_p:"No install, no account. Choose your role to follow the sermon in real time.",home_listen:"I listen (attendee)",
     home_broadcast:"I broadcast (imam / operator)",
     home_note:"Everyone gets the translation privately, in their earphones. Nothing is played aloud in the room. Barakallahu feekum.",
-    bc_setup_h:"Start a khutbah session",bc_setup_p:"A code + QR code will be generated so attendees can follow the sermon.",
+    bc_setup_h:"Start a khutbah session",bc_setup_p:"A QR code will be generated so attendees can follow the sermon.",
     bc_create:"Create session",bc_nokey:"No Gemini key: degraded mode (Arabic relayed without translation).",
     bc_code:"Session code",bc_copylink:"Copy link",bc_share:"Share",bc_listeners:"listeners",
     bc_mode:"Capture mode",mode_speech:"Browser recognition",mode_audio:"Audio → server",mode_manual:"Manual",
@@ -1765,7 +1763,7 @@ const I18N = {
     home_p:"Geen installatie, geen account. Kies je rol om de preek in real-time te volgen.",home_listen:"Ik luister (aanwezige)",
     home_broadcast:"Ik zend uit (imam / operator)",
     home_note:"Iedereen krijgt de vertaling privé, in de oortjes. Er wordt niets hoorbaar afgespeeld in de zaal. Barakallahu feekum.",
-    bc_setup_h:"Een khutbah-sessie starten",bc_setup_p:"Er worden een code + QR-code gegenereerd zodat de aanwezigen de preek kunnen volgen.",
+    bc_setup_h:"Een khutbah-sessie starten",bc_setup_p:"Er wordt een QR-code gegenereerd zodat de aanwezigen de preek kunnen volgen.",
     bc_create:"Sessie aanmaken",bc_nokey:"Geen Gemini-sleutel: beperkte modus (Arabisch zonder vertaling).",
     bc_code:"Sessiecode",bc_copylink:"Link kopiëren",bc_share:"Delen",bc_listeners:"luisteraars",
     bc_mode:"Opnamemodus",mode_speech:"Browserherkenning",mode_audio:"Audio → server",mode_manual:"Handmatig",
@@ -1791,7 +1789,7 @@ const I18N = {
     home_p:"بدون تثبيت وبدون حساب. اختر دورك لمتابعة الخطبة مباشرة.",home_listen:"أنا مستمع (مصلٍّ)",
     home_broadcast:"أنا أبثّ (الإمام / المشغّل)",
     home_note:"كل شخص يتلقّى الترجمة بشكل خاص في سمّاعته. لا يُبثّ أي صوت في القاعة. بارك الله فيكم.",
-    bc_setup_h:"بدء جلسة خطبة",bc_setup_p:"سيتم إنشاء رمز ورمز QR ليتمكّن المصلّون من متابعة الخطبة.",
+    bc_setup_h:"بدء جلسة خطبة",bc_setup_p:"سيتم إنشاء رمز QR ليتمكّن المصلّون من متابعة الخطبة.",
     bc_create:"إنشاء الجلسة",bc_nokey:"لا يوجد مفتاح Gemini: وضع محدود (بثّ العربية بدون ترجمة).",
     bc_code:"رمز الجلسة",bc_copylink:"نسخ الرابط",bc_share:"مشاركة",bc_listeners:"مستمعون",
     bc_mode:"وضع الالتقاط",mode_speech:"تعرّف المتصفّح",mode_audio:"الصوت → الخادم",mode_manual:"يدوي",
@@ -5554,7 +5552,6 @@ $("#btnCreateSession").addEventListener("click", async ()=>{
     BC.mosque=d.mosque_name||""; BC.langs=d.target_langs||langs;
     BC.joinUrl = d.join_url || (location.origin + "/?s=" + d.code);
     BC.shareable = (d.shareable !== false) && !/(^|\/\/)(localhost|127\.0\.0\.1)/i.test(BC.joinUrl);
-    $("#bc-code").textContent=d.code;
     $("#bc-mosqueName").textContent=BC.mosque;
     $("#bc-qr").src=API+"/api/session/"+d.code+"/qr.png";
     $("#bc-joinUrl").textContent = BC.joinUrl;
