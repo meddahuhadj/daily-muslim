@@ -1454,7 +1454,6 @@
         <h3 id="bc-mosqueName" style="color:var(--fg); font-weight:750"></h3>
         <div class="ruh" aria-hidden="true">۞</div>
         <img class="qr" id="bc-qr" alt="QR code" />
-        <p id="bc-joinUrl" class="muted" style="font-size:.8rem; word-break:break-all; margin:6px 0 0"></p>
         <p id="bc-shareWarn" class="hidden" style="font-size:.78rem; color:var(--warn); font-weight:650; margin:8px 0 0"
            data-i18n="bc_share_warn">Ce lien ne marche que sur cet ordinateur. Ouvrez l'application via l'adresse réseau du PC (http://192.168.x.x:8000) ou configurez PUBLIC_BASE_URL / un tunnel pour les téléphones.</p>
         <div class="row" style="margin-top:8px">
@@ -5554,7 +5553,6 @@ $("#btnCreateSession").addEventListener("click", async ()=>{
     BC.shareable = (d.shareable !== false) && !/(^|\/\/)(localhost|127\.0\.0\.1)/i.test(BC.joinUrl);
     $("#bc-mosqueName").textContent=BC.mosque;
     $("#bc-qr").src=API+"/api/session/"+d.code+"/qr.png";
-    $("#bc-joinUrl").textContent = BC.joinUrl;
     $("#bc-shareWarn").classList.toggle("hidden", BC.shareable);
     $("#bc-nokey").classList.toggle("hidden", BC.geminiOn);
     $("#bc-setup").classList.add("hidden"); $("#bc-live").classList.remove("hidden");
