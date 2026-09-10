@@ -31,12 +31,15 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import os
 import time
 from collections import OrderedDict
 from pathlib import Path
 
 import httpx
+
+logger = logging.getLogger("dailymuslim.translator")
 
 # --------------------------------------------------------------------------- #
 # Configuration
@@ -216,6 +219,12 @@ def has_api_key() -> bool:
     return any(_provider_configured(p) for p in TRANSLATE_PROVIDERS)
 
 
+def provider_status() -> dict[str, bool]:
+    """État de configuration (clé présente/région) de chaque fournisseur actif.
+    N'appelle aucun fournisseur : diagnostic purement local, rapide."""
+    return {name: _provider_configured(name) for name in TRANSLATE_PROVIDERS}
+
+
 def _status_to_error(code: int) -> str:
     if code in (401, 403):
         return "auth"
@@ -237,13 +246,63 @@ def _worst(errors: list[str]) -> str:
 # Prompt utilisateur commun + parsing JSON commun
 # --------------------------------------------------------------------------- #
 
-def _user_msg(arabic_text: str, langs: list[str], glossary: str) -> str:
+CONTEXT_MAX = 3          # nombre maximal de segments précédents fournis au LLM
+_CONTEXT_SEG_CAP = 350   # longueur max (caractères) d'un segment de contexte
+
+
+def _env_int(name: str, default: int, lo: int, hi: int) -> int:
+    try:
+        v = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        v = default
+    return max(lo, min(v, hi))
+
+
+# Rendu configurable via l'environnement (ex: CONTEXT_SEGMENTS=5), borné 1..6
+# pour maîtriser la consommation de tokens.
+CONTEXT_MAX = _env_int("CONTEXT_SEGMENTS", CONTEXT_MAX, 1, 6)
+
+
+def _normalize_context(context) -> list[dict]:
+    """Contexte glissant : derniers segments déjà traduits, borné et nettoyé."""
+    if not context:
+        return []
+    out: list[dict] = []
+    for c in list(context)[-CONTEXT_MAX:]:
+        if not isinstance(c, dict):
+            continue
+        ar = str(c.get("arabic") or "").strip()[:_CONTEXT_SEG_CAP]
+        if not ar:
+            continue
+        out.append({
+            "arabic": ar,
+            "translated": str(c.get("translated") or "").strip()[:_CONTEXT_SEG_CAP],
+        })
+    return out
+
+
+def _user_msg(arabic_text: str, langs: list[str], glossary: str,
+              context: list[dict] | None = None) -> str:
     gloss = (
         ("GLOSSAIRE DE LA MOSQUÉE (à respecter strictement pour les noms propres, "
          "titres et translittérations) :\n" + glossary + "\n\n") if glossary else ""
     )
+    ctx = ""
+    if context:
+        lines = [
+            "CONTEXTE — les segments précédents te sont fournis pour comprendre les "
+            "pronoms et les références du sermon (ne les traduis PAS, n'inclus jamais "
+            "leur contenu dans ta réponse)."
+        ]
+        for i, c in enumerate(context, 1):
+            line = f"[{i}] « {c['arabic']} »"
+            if c.get("translated"):
+                line += f"\n    → {c['translated']}"
+            lines.append(line)
+        ctx = "\n".join(lines) + "\n\n"
     return (
         gloss
+        + ctx
         + "Langues cibles (codes) : " + ", ".join(langs) + ".\n"
         "Traduis le segment de khutbah suivant (arabe). Fournis une entrée par langue, "
         "dans cet ordre, sans en omettre aucune. Réponds UNIQUEMENT en JSON conforme "
@@ -293,13 +352,13 @@ def _parse_llm_json(raw: str, langs: list[str], arabic_text: str) -> dict | None
 # Fournisseur : Gemini (format natif, rotation de clés)
 # --------------------------------------------------------------------------- #
 
-async def _prov_gemini(arabic_text, langs, glossary) -> tuple[dict | None, str]:
+async def _prov_gemini(arabic_text, langs, glossary, context=None) -> tuple[dict | None, str]:
     global _gemini_key_idx
     if not GEMINI_KEYS:
         return None, "no_provider"
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"role": "user", "parts": [{"text": _user_msg(arabic_text, langs, glossary)}]}],
+        "contents": [{"role": "user", "parts": [{"text": _user_msg(arabic_text, langs, glossary, context)}]}],
         "generationConfig": {
             "temperature": 0.2, "topP": 0.9, "candidateCount": 1,
             "maxOutputTokens": 2048, "responseMimeType": "application/json",
@@ -320,7 +379,7 @@ async def _prov_gemini(arabic_text, langs, glossary) -> tuple[dict | None, str]:
         try:
             r = await _http().post(url, params={"key": key}, json=payload)
         except (httpx.HTTPError, asyncio.TimeoutError) as exc:
-            print(f"[gemini] réseau: {exc!r}")
+            logger.warning("gemini réseau: %r", exc)
             err = "network"
             continue
         if r.status_code == 200:
@@ -331,7 +390,7 @@ async def _prov_gemini(arabic_text, langs, glossary) -> tuple[dict | None, str]:
                 return None, "bad_response"
             return _parse_llm_json(raw, langs, arabic_text), ""
         err = _status_to_error(r.status_code)
-        print(f"[gemini] HTTP {r.status_code} ({err})")
+        logger.warning("gemini HTTP %s (%s)", r.status_code, err)
         if err == "quota":                   # clé épuisée -> essaie la suivante
             continue
         if err == "server":
@@ -345,7 +404,7 @@ async def _prov_gemini(arabic_text, langs, glossary) -> tuple[dict | None, str]:
 # --------------------------------------------------------------------------- #
 
 async def _prov_openai_compat(base, key, model, arabic_text, langs, glossary,
-                              extra_headers=None) -> tuple[dict | None, str]:
+                              context=None, extra_headers=None) -> tuple[dict | None, str]:
     if not key:
         return None, "no_provider"
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
@@ -357,17 +416,17 @@ async def _prov_openai_compat(base, key, model, arabic_text, langs, glossary,
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": _user_msg(arabic_text, langs, glossary)},
+            {"role": "user", "content": _user_msg(arabic_text, langs, glossary, context)},
         ],
     }
     try:
         r = await _http().post(f"{base}/chat/completions", headers=headers, json=body)
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
-        print(f"[{base}] réseau: {exc!r}")
+        logger.warning("openai-compat (%s) réseau: %r", base, exc)
         return None, "network"
     if r.status_code != 200:
         err = _status_to_error(r.status_code)
-        print(f"[{base}] HTTP {r.status_code} ({err}): {r.text[:200]}")
+        logger.warning("openai-compat (%s) HTTP %s (%s): %.200s", base, r.status_code, err, r.text)
         return None, err
     try:
         raw = r.json()["choices"][0]["message"]["content"]
@@ -376,15 +435,15 @@ async def _prov_openai_compat(base, key, model, arabic_text, langs, glossary,
     return _parse_llm_json(raw, langs, arabic_text), ""
 
 
-async def _prov_groq(arabic_text, langs, glossary):
+async def _prov_groq(arabic_text, langs, glossary, context=None):
     return await _prov_openai_compat(_GROQ_BASE, GROQ_KEY, GROQ_MODEL,
-                                    arabic_text, langs, glossary)
+                                    arabic_text, langs, glossary, context)
 
 
-async def _prov_openrouter(arabic_text, langs, glossary):
+async def _prov_openrouter(arabic_text, langs, glossary, context=None):
     return await _prov_openai_compat(
         _OPENROUTER_BASE, OPENROUTER_KEY, OPENROUTER_MODEL, arabic_text, langs, glossary,
-        extra_headers={"HTTP-Referer": "https://github.com/", "X-Title": "khutbah-live"},
+        context, extra_headers={"HTTP-Referer": "https://github.com/", "X-Title": "khutbah-live"},
     )
 
 
@@ -392,7 +451,7 @@ async def _prov_openrouter(arabic_text, langs, glossary):
 # Fournisseur : Azure AI Translator (MT pure — pas de détection Coran)
 # --------------------------------------------------------------------------- #
 
-async def _prov_azure(arabic_text, langs, glossary) -> tuple[dict | None, str]:
+async def _prov_azure(arabic_text, langs, glossary, context=None) -> tuple[dict | None, str]:
     if not (AZURE_KEY and AZURE_REGION):
         return None, "no_provider"
     targets = [l for l in langs if l in _AZURE_LANGS and l != "ar"]
@@ -409,11 +468,11 @@ async def _prov_azure(arabic_text, langs, glossary) -> tuple[dict | None, str]:
         r = await _http().post(_AZURE_URL, params=params, headers=headers,
                                json=[{"Text": arabic_text}])
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
-        print(f"[azure] réseau: {exc!r}")
+        logger.warning("azure réseau: %r", exc)
         return None, "network"
     if r.status_code != 200:
         err = _status_to_error(r.status_code)
-        print(f"[azure] HTTP {r.status_code} ({err}): {r.text[:200]}")
+        logger.warning("azure HTTP %s (%s): %.200s", r.status_code, err, r.text)
         return None, err
     try:
         trans = r.json()[0]["translations"]
@@ -443,9 +502,14 @@ async def translate_segment(
     target_langs: list[str],
     glossary: str = "",
     *,
+    context: list[dict] | None = None,
     use_cache: bool = True,
 ) -> dict | None:
     """Traduit `arabic_text` vers `target_langs` via la chaîne de fournisseurs.
+
+    `context` : derniers segments déjà diffusés ({arabic, translated}) pour que le
+    LLM accorde correctement les pronoms et références (contexte glissant).
+    Il est borné (CONTEXT_MAX segments, tronqués) et fait partie de la clé de cache.
 
     Retourne {arabic, is_quran, quran_ref, is_hadith, translations:{lang:text}}
     ou None si tous les fournisseurs échouent.
@@ -457,8 +521,11 @@ async def translate_segment(
     langs = [l for l in dict.fromkeys(target_langs) if l and l != "ar"]
     if not arabic_text or not langs:
         return None
+    context = _normalize_context(context)
 
-    cache_key = arabic_text + "\x1f" + ",".join(sorted(langs)) + "\x1f" + glossary
+    ctx_key = ("\x1fctx" + json.dumps(context, ensure_ascii=False)
+               if context else "")
+    cache_key = arabic_text + "\x1f" + ",".join(sorted(langs)) + "\x1f" + glossary + ctx_key
     if use_cache:
         cached = _cache_get(cache_key)
         if cached is not None:
@@ -472,9 +539,9 @@ async def translate_segment(
     errors: list[str] = []
     for name in chain:
         try:
-            result, err = await _TRANSLATE_IMPL[name](arabic_text, langs, glossary)
+            result, err = await _TRANSLATE_IMPL[name](arabic_text, langs, glossary, context)
         except Exception as exc:  # défensif : jamais casser le flux
-            print(f"[{name}] exception: {exc!r}")
+            logger.warning("fournisseur %s exception: %r", name, exc)
             result, err = None, "server"
         if result is not None:
             _last_error = ""
@@ -483,8 +550,20 @@ async def translate_segment(
             return result
         errors.append(err)
 
+    # Dernier repli : dictionnaire local de phrases courantes (hors-ligne)
+    try:
+        import fallback_translations
+        fb = fallback_translations.fallback_translate(arabic_text, langs)
+        if fb is not None:
+            _last_error = ""
+            _last_provider = "local"
+            _cache_put(cache_key, fb)
+            return fb
+    except Exception as exc:
+        logger.warning("fallback local: %r", exc)
+
     _last_error = _worst(errors)
-    print(f"[translate] tous les fournisseurs ont échoué ({chain} -> {errors})")
+    logger.error("traduction impossible — chaîne échouée (%s -> %s)", chain, errors)
     return None
 
 
@@ -515,10 +594,10 @@ async def _stt_groq(audio_bytes: bytes, mt: str) -> str | None:
         r = await _http().post(f"{_GROQ_BASE}/audio/transcriptions",
                                headers={"Authorization": f"Bearer {GROQ_KEY}"}, files=files)
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
-        print(f"[groq-stt] réseau: {exc!r}")
+        logger.warning("groq-stt réseau: %r", exc)
         return None
     if r.status_code != 200:
-        print(f"[groq-stt] HTTP {r.status_code}: {r.text[:200]}")
+        logger.warning("groq-stt HTTP %s: %.200s", r.status_code, r.text)
         return None
     return (r.text or "").strip().strip('"')
 
@@ -538,10 +617,10 @@ async def _stt_gemini(audio_bytes: bytes, mt: str) -> str | None:
     try:
         r = await _http().post(url, params={"key": GEMINI_KEYS[0]}, json=payload)
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
-        print(f"[gemini-stt] réseau: {exc!r}")
+        logger.warning("gemini-stt réseau: %r", exc)
         return None
     if r.status_code != 200:
-        print(f"[gemini-stt] HTTP {r.status_code}")
+        logger.warning("gemini-stt HTTP %s", r.status_code)
         return None
     try:
         parts = r.json()["candidates"][0]["content"]["parts"]
@@ -564,8 +643,158 @@ async def transcribe_audio(audio_bytes: bytes, mime_type: str) -> str | None:
         try:
             text = await impl(audio_bytes, mt)
         except Exception as exc:
-            print(f"[{name}-stt] exception: {exc!r}")
+            logger.warning("fournisseur STT %s exception: %r", name, exc)
             text = None
         if text:
             return text
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# Assistant (chat) : même chaîne de repli multi-fournisseurs, réponses en texte
+# --------------------------------------------------------------------------- #
+
+_ASSISTANT_PROMPT = (
+    "Tu es « DailY Muslim », un assistant musulman bienveillant et utile. Tu réponds "
+    "de façon concise, respectueuse et islamiquement juste, en t'appuyant sur le Coran "
+    "et la Sunna authentique. Si une question touche à un jugement religieux délicat, "
+    "tu précises qu'il faut consulter une personne qualifiée. Tu peux utiliser quelques "
+    "citations (Coran/hadith) avec leurs références. Tu restes dans la langue de la "
+    "question de l'utilisateur (fr, en, nl, ar...). Réponds UNIQUEMENT avec le texte "
+    "de ta réponse, sans préambule ni méta-explication."
+)
+
+ASSISTANT_DISCLAIMER = (
+    "Assistant informatif — consultez une personne qualifiée pour les décisions religieuses."
+)
+
+
+def _assistant_messages(user_msg: str, history: list[dict]) -> list[dict]:
+    msgs: list[dict] = []
+    if isinstance(history, list):
+        for h in history[-8:]:
+            if not isinstance(h, dict):
+                continue
+            role = h.get("role")
+            content = str(h.get("content", "")).strip()
+            if role in ("user", "assistant") and content:
+                msgs.append({"role": role, "content": content[:4000]})
+    msgs.append({"role": "user", "content": str(user_msg)[:8000]})
+    return msgs
+
+
+async def _chat_gemini(user_msg: str, history: list[dict]) -> tuple[str | None, str]:
+    if not GEMINI_KEYS:
+        return None, "no_provider"
+    contents = []
+    for m in _assistant_messages(user_msg, history):
+        contents.append({"role": m["role"], "parts": [{"text": m["content"]}]})
+    payload = {
+        "systemInstruction": {"parts": [{"text": _ASSISTANT_PROMPT}]},
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.4, "topP": 0.9, "candidateCount": 1,
+            "maxOutputTokens": 1024,
+        },
+        "safetySettings": [
+            {"category": c, "threshold": "BLOCK_NONE"}
+            for c in ("HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH",
+                      "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT")
+        ],
+    }
+    url = f"{_GEMINI_BASE}/models/{GEMINI_MODEL}:generateContent"
+    err = "network"
+    n = len(GEMINI_KEYS)
+    for _ in range(n):
+        key = GEMINI_KEYS[0]
+        try:
+            r = await _http().post(url, params={"key": key}, json=payload)
+        except (httpx.HTTPError, asyncio.TimeoutError) as exc:
+            logger.warning("gemini-chat réseau: %r", exc)
+            err = "network"
+            continue
+        if r.status_code == 200:
+            try:
+                parts = r.json()["candidates"][0]["content"]["parts"]
+                text = "".join(p.get("text", "") for p in parts).strip()
+            except (KeyError, IndexError, TypeError, ValueError):
+                return None, "bad_response"
+            return text or None, ""
+        err = _status_to_error(r.status_code)
+        logger.warning("gemini-chat HTTP %s (%s)", r.status_code, err)
+        if err in ("quota", "server"):
+            continue
+        return None, err
+    return None, err
+
+
+async def _chat_openai_compat(base: str, key: str, model: str, user_msg: str,
+                              history: list[dict], extra_headers=None) -> tuple[str | None, str]:
+    if not key:
+        return None, "no_provider"
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
+    body = {
+        "model": model,
+        "temperature": 0.4,
+        "max_tokens": 1024,
+        "messages": [{"role": "system", "content": _ASSISTANT_PROMPT}]
+                    + _assistant_messages(user_msg, history),
+    }
+    try:
+        r = await _http().post(f"{base}/chat/completions", headers=headers, json=body)
+    except (httpx.HTTPError, asyncio.TimeoutError) as exc:
+        logger.warning("openai-compat chat (%s) réseau: %r", base, exc)
+        return None, "network"
+    if r.status_code != 200:
+        err = _status_to_error(r.status_code)
+        logger.warning("openai-compat chat (%s) HTTP %s (%s): %.200s", base, r.status_code, err, r.text)
+        return None, err
+    try:
+        text = r.json()["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError, ValueError):
+        return None, "bad_response"
+    return (str(text).strip() or None), ""
+
+
+async def chat_assistant(user_msg: str, history: list[dict] | None = None) -> dict | None:
+    """Répond à une question de l'assistant via la chaîne de fournisseurs.
+
+    Retourne {reply, provider} ou None si aucun fournisseur ne répond.
+    """
+    global _last_error, _last_provider
+    user_msg = (user_msg or "").strip()
+    if not user_msg:
+        return None
+    history = history or []
+    chain = [p for p in TRANSLATE_PROVIDERS if _provider_configured(p)]
+    errors: list[str] = []
+    for name in chain:
+        try:
+            if name == "gemini":
+                text, err = await _chat_gemini(user_msg, history)
+            elif name in ("groq", "openrouter"):
+                kwargs = {"extra_headers": {
+                    "HTTP-Referer": "https://github.com/",
+                    "X-Title": "daily-muslim",
+                }} if name == "openrouter" else {}
+                text, err = await _chat_openai_compat(
+                    {"groq": _GROQ_BASE, "openrouter": _OPENROUTER_BASE}[name],
+                    {"groq": GROQ_KEY, "openrouter": OPENROUTER_KEY}[name],
+                    {"groq": GROQ_MODEL, "openrouter": OPENROUTER_MODEL}[name],
+                    user_msg, history, **kwargs)
+            else:
+                continue
+        except Exception as exc:
+            logger.warning("fournisseur chat %s exception: %r", name, exc)
+            text, err = None, "server"
+        if text:
+            _last_error = ""
+            _last_provider = name
+            return {"reply": text, "provider": name}
+        errors.append(err)
+
+    _last_error = _worst(errors)
+    logger.error("assistant — chaîne échouée (%s -> %s)", chain, errors)
     return None

@@ -1,0 +1,14 @@
+{
+  "name": "daily-muslim-frontend-tests",
+  "private": true,
+  "type": "module",
+  "description": "Smoke tests Playwright pour le frontend Daily Muslim",
+  "scripts": {
+    "test": "node smoke.mjs",
+    "test:headed": "node smoke.mjs",
+    "check:i18n": "node ../audit-i18n.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.57.0"
+  }
+}

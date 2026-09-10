@@ -4,6 +4,9 @@ backend/.venv/
 **/__pycache__/
 *.pyc
 
+# Outillage agent local (skills hors projet)
+.agents/
+
 # Plateforme
 .vercel/
 node_modules/

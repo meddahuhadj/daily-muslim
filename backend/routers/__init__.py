@@ -1,0 +1,1 @@
+"""Routers modulaires de l'API Daily Muslim Life Assistant."""

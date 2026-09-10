@@ -120,3 +120,23 @@ def test_stats_pushed_to_broadcaster_on_listener_join(app_client):
             st = _drain(b, "stats")
             assert st["listeners"] == 1
             assert st["languages"].get("fr") == 1
+
+
+def test_sliding_context_is_passed_to_translator(app_client):
+    """Le 4e segment doit recevoir les 3 précédents comme contexte glissant,
+    dans l'ordre, avec la traduction de la langue par défaut (fr)."""
+    code, tok = _new_session(app_client, target_langs=["fr"])
+    with app_client.websocket_connect(f"/ws/broadcast/{code}?token={tok}") as b:
+        _drain(b, "hello")
+        with app_client.websocket_connect(f"/ws/listen/{code}?lang=fr") as l:
+            _drain(l, "hello")
+            for txt in ("premier", "second", "troisieme", "quatrieme"):
+                b.send_text(json.dumps({"type": "transcript", "text": txt, "is_final": True}))
+                _drain(l, "phrase")
+            assert len(app_client._fake.calls) == 4
+            ctx = app_client._fake.calls[-1]["context"]
+            assert [c["arabic"] for c in ctx] == ["premier", "second", "troisieme"]
+            # traductions de référence = langue par défaut (fr), préfixées [fr]
+            assert [c["translated"] for c in ctx] == ["[fr] premier", "[fr] second", "[fr] troisieme"]
+            # le tout premier segment n'a pas de contexte
+            assert app_client._fake.calls[0]["context"] == []

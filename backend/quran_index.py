@@ -10,9 +10,12 @@ retrouve. 100 % hors-ligne, aucun appel reseau a l'execution.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import unicodedata
 from pathlib import Path
+
+logger = logging.getLogger("dailymuslim.quran_index")
 
 _INDEX_PATH = Path(__file__).resolve().parent / "data" / "quran_index.json"
 
@@ -60,7 +63,7 @@ def _load() -> bool:
         if len(_refs) != len(_norm) or not _refs:
             _refs, _norm = [], []
     except (OSError, ValueError, KeyError) as exc:
-        print(f"[quran_index] index indisponible: {exc!r}")
+        logger.warning("index coranique indisponible: %r", exc)
         _refs, _norm = [], []
     return bool(_refs)
 
@@ -79,6 +82,60 @@ def _consecutive_range(hits: list[int]) -> str | None:
     if first_s == last_s and hits[-1] - hits[0] == len(hits) - 1:
         return f"{first_s}:{first_a}-{last_a}"
     return _refs[hits[0]]
+
+
+def search(term: str, limit: int = 50) -> list[tuple[str, str]]:
+    """Recherche `term` dans le texte coranique normalise.
+
+    Renvoie les couples (ref 'S:A', texte normalise) des versets contenant le
+    terme, jusqu'a `limit`. Aucun appel reseau (index local charge une fois).
+    """
+    if not _load():
+        return []
+    seg = normalize(term)
+    if not seg:
+        return []
+    hits: list[tuple[str, str]] = []
+    for i, ver in enumerate(_norm):
+        if seg in ver:
+            hits.append((_refs[i], ver))
+            if len(hits) >= limit:
+                break
+    return hits
+
+
+def count_ayat() -> dict[int, int]:
+    """Nombre de versets par sourate, derive des refs 'S:A' de l'index."""
+    out: dict[int, int] = {}
+    if not _load():
+        return out
+    cur_s, cur_a = 0, 0
+    for ref in _refs:
+        s, a = (int(x) for x in ref.split(":"))
+        if s == cur_s:
+            cur_a = max(cur_a, a)
+        else:
+            if cur_s:
+                out[cur_s] = cur_a
+            cur_s, cur_a = s, a
+    if cur_s:
+        out[cur_s] = cur_a
+    return out
+
+
+def iter_verses() -> list[tuple[str, str]]:
+    """Tous les couples (ref 'S:A', texte normalise) — index charge au besoin."""
+    if not _load():
+        return []
+    return list(zip(_refs, _norm))
+
+
+def get(ref: str) -> str | None:
+    """Texte normalise du verset 'S:A', ou None s'il est introuvable."""
+    for _r, _t in zip(_refs, _norm):
+        if _r == ref:
+            return _t
+    return None
 
 
 def find_ref(arabic_text: str, min_len: int = 8) -> str | None:

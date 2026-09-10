@@ -63,3 +63,42 @@ def test_fill_quran_ref_only_when_missing():
     not_q = {"is_quran": False, "quran_ref": None, "arabic": "قل هو الله احد"}
     main._fill_quran_ref(not_q)
     assert not_q["quran_ref"] is None
+
+
+def _rec(seq, ar, **tr):
+    return {"seq": seq, "ts": seq, "arabic": ar, "translations": tr,
+            "is_quran": False, "quran_ref": None}
+
+
+def test_sliding_context_returns_last_segments_in_preferred_lang():
+    r = Room("ABC123")
+    r.default_langs = ["fr", "en"]
+    for i in range(1, 6):
+        r.history.append(_rec(i, f"ar{i}", fr=f"fr{i}", en=f"en{i}"))
+    ctx = main._sliding_context(r)
+    assert [c["arabic"] for c in ctx] == ["ar3", "ar4", "ar5"]     # borné à 3
+    assert [c["translated"] for c in ctx] == ["fr3", "fr4", "fr5"]  # langue par défaut
+    # un limit supérieur à la taille de l'historique ne crée pas d'entrées
+    assert [c["arabic"] for c in main._sliding_context(r, limit=10)] == \
+        ["ar1", "ar2", "ar3", "ar4", "ar5"]
+
+
+def test_sliding_context_before_seq_excludes_corrected_phrase():
+    r = Room("ABC123")
+    r.default_langs = ["fr"]
+    for i in range(1, 5):
+        r.history.append(_rec(i, f"ar{i}", fr=f"fr{i}"))
+    # correction de la phrase 3 : le contexte est antérieur à 3
+    ctx = main._sliding_context(r, before_seq=3)
+    assert [c["arabic"] for c in ctx] == ["ar1", "ar2"]
+    assert main._sliding_context(r, before_seq=1) == []
+
+
+def test_sliding_context_falls_back_to_any_translation():
+    r = Room("ABC123")
+    r.default_langs = []                       # aucune langue par défaut -> repli "fr"
+    r.history.append(_rec(1, "ar1", en="only-en"))
+    r.history.append(_rec(2, "ar2", es="only-es"))   # ni fr ni en : repli sur es
+    ctx = main._sliding_context(r)
+    assert ctx == [{"arabic": "ar1", "translated": "only-en"},
+                   {"arabic": "ar2", "translated": "only-es"}]

@@ -1,9 +1,15 @@
-# Blueprint Render — déploiement du prêche (khutbah) en direct.
+# Blueprint Render — Daily Muslim Life Assistant (déploiement gratuit).
 # Une seule instance persistante (WebSockets longs + état en mémoire).
+#
+# Déploiement en 3 étapes :
+#   1. Pousser ce dépôt sur GitHub (public ou privé).
+#   2. dashboard.render.com → « New » → « Blueprint » → sélectionner le dépôt.
+#   3. Renseigner les secrets (GEMINI_API_KEY) dans « Environment ».
+#
 # Alternative équivalente : imposer ce Dockerfile sur Railway / Fly.io / un VPS.
 services:
   - type: web
-    name: khutbah-live
+    name: daily-muslim
     runtime: docker
     plan: free
     autoDeploy: true
@@ -22,5 +28,6 @@ services:
       - key: DEFAULT_TARGET_LANGS
         sync: false
       # Facultatif : URL publique utilisée pour les liens/QR
+      # (ex: https://daily-muslim.onrender.com)
       - key: PUBLIC_BASE_URL
         sync: false

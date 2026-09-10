@@ -5,6 +5,11 @@ backend/.venv/
 *.pyc
 .venv/
 
+# Dépendances frontend non nécessaires à l'exécution
+node_modules/
+frontend/tests/
+backend/.pytest_cache/
+
 # Git
 .git/
 .gitignore

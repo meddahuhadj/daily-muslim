@@ -26,23 +26,70 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import logging
 import os
 import secrets
 import time
 from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("dailymuslim")
+
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import quran_index
 import translator
+from ratelimit import SlidingWindowRateLimiter
+
+
+# --------------------------------------------------------------------------- #
+# CORS — par défaut : reflète l'origine seulement si elle pointe vers ce même
+# serveur (frontend servi par cette app). Pour un front hébergé ailleurs,
+# lister les origines dans ALLOWED_ORIGINS (séparées par des virgules).
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
+
+class SameOriginCORSMiddleware(BaseHTTPMiddleware):
+    """Autorise une origine si elle correspond au Host du serveur ou figure
+    dans ALLOWED_ORIGINS. Bloque les autres (notamment le pré-vol)."""
+
+    _headers = {
+        "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Accept, Content-Type, Authorization, X-Requested-With",
+    }
+
+    async def dispatch(self, request, call_next):
+        origin = request.headers.get("origin")
+        if not origin:
+            return await call_next(request)
+        host = request.headers.get("host", "")
+        allowed = origin in ALLOWED_ORIGINS or urlsplit(origin).netloc == host
+        if request.method == "OPTIONS":
+            headers = dict(self._headers)
+            if allowed:
+                headers["Access-Control-Allow-Origin"] = origin
+            return Response(status_code=204, headers=headers)
+        response = await call_next(request)
+        if allowed:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+            for k, v in self._headers.items():
+                response.headers[k] = v
+        return response
 
 # --------------------------------------------------------------------------- #
 # Configuration
@@ -148,14 +195,14 @@ class Room:
                     try:
                         text = await translator.transcribe_audio(item["audio"], item["mime"])
                     except Exception as exc:
-                        print(f"[stt] {exc!r}")
+                        logger.warning("STT: %r", exc)
                         text = None
                     if text:
                         await self.notify_broadcaster({"type": "stt", "text": text})
                 if text:
                     await process_final_segment(self, text, manual=item["manual"])
             except Exception as exc:  # ne jamais tuer le worker
-                print(f"[seg_worker {self.code}] {exc!r}")
+                logger.warning("seg_worker %s: %r", self.code, exc)
             finally:
                 self._seg_q.task_done()
 
@@ -339,12 +386,38 @@ async def _janitor():
         try:
             _purge_stale()
         except Exception as exc:
-            print(f"[janitor] {exc!r}")
+            logger.warning("janitor: %r", exc)
 
 
 # --------------------------------------------------------------------------- #
 # Pipeline de traduction d'un segment final
 # --------------------------------------------------------------------------- #
+
+# Nombre de segments précédents fournis au LLM comme contexte glissant
+# (accord des pronoms et des références du sermon). Configurable via
+# CONTEXT_SEGMENTS (voir translator.CONTEXT_MAX).
+SLIDING_CONTEXT_MAX = translator.CONTEXT_MAX
+
+
+def _sliding_context(room: Room, before_seq: int | None = None,
+                     limit: int = SLIDING_CONTEXT_MAX) -> list[dict]:
+    """Derniers segments traduits de la session, pour le contexte de traduction.
+
+    `before_seq` restreint au contexte antérieur à une phrase donnée (utilisé lors
+    d'une correction : on ne fournit que ce qui précède la phrase corrigée).
+    La traduction de référence retenue est celle de la langue par défaut (repli
+    sur n'importe quelle langue disponible).
+    """
+    records = room.history
+    if before_seq is not None:
+        records = [rec for rec in records if rec["seq"] < before_seq]
+    pref = room.default_langs[0] if room.default_langs else "fr"
+    out: list[dict] = []
+    for rec in list(records)[-limit:]:
+        tr = rec.get("translations") or {}
+        translated = tr.get(pref) or next((v for v in tr.values() if v), "")
+        out.append({"arabic": rec.get("arabic") or "", "translated": translated})
+    return out
 
 
 async def process_final_segment(room: Room, arabic_text: str, *, manual: bool = False):
@@ -361,10 +434,11 @@ async def process_final_segment(room: Room, arabic_text: str, *, manual: bool = 
     if target_langs and translator.has_api_key():
         try:
             result = await translator.translate_segment(
-                arabic_text, target_langs, room.glossary
+                arabic_text, target_langs, room.glossary,
+                context=_sliding_context(room),
             )
         except Exception as exc:  # défensif : jamais casser le flux
-            print(f"[translate] exception: {exc!r}")
+            logger.warning("process_final_segment exception: %r", exc)
             result = None
 
     degraded = result is None
@@ -395,7 +469,7 @@ def _fill_quran_ref(rec: dict) -> None:
         try:
             ref = quran_index.find_ref(rec.get("arabic") or "")
         except Exception as exc:
-            print(f"[quran_index] {exc!r}")
+            logger.warning("quran_index: %r", exc)
             ref = None
         if ref:
             rec["quran_ref"] = ref
@@ -415,10 +489,12 @@ async def recorrect_segment(room: Room, seq: int, arabic_text: str):
     if target_langs and translator.has_api_key():
         try:
             result = await translator.translate_segment(
-                arabic_text, target_langs, room.glossary, use_cache=False
+                arabic_text, target_langs, room.glossary,
+                context=_sliding_context(room, before_seq=seq),
+                use_cache=False,
             )
         except Exception as exc:
-            print(f"[recorrect] {exc!r}")
+            logger.warning("recorrect: %r", exc)
     rec["arabic"] = (result or {}).get("arabic") or arabic_text
     if result:
         rec["translations"] = result.get("translations", {})
@@ -474,13 +550,20 @@ async def lifespan(app: FastAPI):
     await translator.aclose()
 
 
-app = FastAPI(title="Khutbah Live Translation", version="1.2.0", lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="Daily Muslim Life Assistant", version="2.0.0", lifespan=lifespan)
+app.add_middleware(SameOriginCORSMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Routers modulaires (Daily Muslim Life Assistant)
+from routers import adhkar, assistant, hadith, learning, location, prayer, quran  # noqa: E402
+
+app.include_router(prayer.router)
+app.include_router(assistant.router)
+app.include_router(adhkar.router)
+app.include_router(location.router)
+app.include_router(learning.router)
+app.include_router(quran.router)
+app.include_router(hadith.router)
 
 
 # ----------------------------- REST --------------------------------------- #
@@ -550,6 +633,8 @@ async def healthz():
         "segments_dropped": sum(r.dropped_segments for r in ROOMS.values()),
         "gemini": translator.has_api_key(),
         "translate_providers": translator.TRANSLATE_PROVIDERS,
+        "providers": translator.provider_status(),
+        "context_segments": translator.CONTEXT_MAX,
         "translate_last_error": translator.last_error() or None,
         "translate_last_provider": translator.last_provider() or None,
         "model": translator.MODEL,
@@ -561,21 +646,14 @@ async def api_languages():
     return {"languages": [{"code": c, "name": n} for c, n in SUPPORTED_LANGUAGES.items()]}
 
 
-# Rate limiting mémoire : créations de session par IP (fenêtre glissante).
+# Rate limiting mémoire, fenêtre glissante par IP — voir backend/ratelimit.py.
 _RL_WINDOW = 60.0
 _RL_MAX = 12
-_rl_hits: dict[str, deque] = {}
+session_limiter = SlidingWindowRateLimiter(_RL_WINDOW, _RL_MAX)
 
 
 def _rate_ok(ip: str) -> bool:
-    now = time.time()
-    dq = _rl_hits.setdefault(ip, deque())
-    while dq and now - dq[0] > _RL_WINDOW:
-        dq.popleft()
-    if len(dq) >= _RL_MAX:
-        return False
-    dq.append(now)
-    return True
+    return session_limiter.allow(ip)
 
 
 @app.post("/api/session")
@@ -680,15 +758,15 @@ async def index():
 @app.get("/manifest.webmanifest")
 async def manifest():
     data = {
-        "name": "Traduction du prêche",
-        "short_name": "Khutbah",
-        "description": "Traduction en direct du prêche (khutbah) sur votre téléphone.",
+        "name": "Daily Muslim Life Assistant",
+        "short_name": "Daily Muslim",
+        "description": "Assistant quotidien du musulman : prières, Coran, adhkar, Qibla, rappels et traduction du prêche.",
         "start_url": "./",
         "scope": "./",
         "display": "standalone",
         "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
         "orientation": "portrait",
-        "categories": ["utilities", "education"],
+        "categories": ["utilities", "education", "lifestyle"],
         "background_color": "#080e1a",
         "theme_color": "#1a6b4a",
         "lang": "fr",
@@ -740,6 +818,23 @@ async def api_icon(size: int):
     size = max(48, min(size, 512))
     return Response(_make_icon(size), media_type="image/png",
                     headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Renvoie un favicon minimal (carré islamique) pour éviter le 404."""
+    try:
+        from PIL import Image, ImageDraw
+        buf = io.BytesIO()
+        img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        d.rectangle([4, 4, 27, 27], fill=(12, 30, 48, 255), outline=(201, 168, 76, 255), width=2)
+        d.ellipse([10, 10, 21, 21], fill=(201, 168, 76, 255))
+        img.save(buf, format="PNG")
+        return Response(buf.getvalue(), media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+    except Exception:
+        return Response(status_code=204)
 
 
 # ----------------------------- WebSocket : diffuseur -------------------- #
@@ -852,7 +947,7 @@ async def ws_broadcast(ws: WebSocket, code: str, token: str = Query("")):
     except WebSocketDisconnect:
         pass
     except Exception as exc:
-        print(f"[ws_broadcast] {exc!r}")
+        logger.warning("ws_broadcast %s: %r", code, exc)
     finally:
         if room.broadcaster is ws:
             room.broadcaster = None
@@ -930,7 +1025,7 @@ async def ws_listen(ws: WebSocket, code: str, lang: str = Query("fr"),
     except WebSocketDisconnect:
         pass
     except Exception as exc:
-        print(f"[ws_listen] {exc!r}")
+        logger.warning("ws_listen %s: %r", code, exc)
     finally:
         await room.drop_listener(ws)
 
@@ -944,6 +1039,7 @@ if __name__ == "__main__":
 
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8000"))
-    print(f"http://{host}:{port}  (Gemini: {'OK' if translator.has_api_key() else 'ABSENT - degraded mode'})", flush=True)
+    logger.info("http://%s:%s  (Gemini: %s)", host, port,
+                "OK" if translator.has_api_key() else "ABSENT - degraded mode")
     uvicorn.run("main:app", host=host, port=port, reload=False, ws_ping_interval=20,
                 ws_ping_timeout=20)

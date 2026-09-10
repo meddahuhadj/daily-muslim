@@ -24,7 +24,7 @@ def test_out_of_order_translation_is_reordered(app_client, monkeypatch):
     quand même recevoir seq 1 puis seq 2."""
     delays = {"un": 0.20, "deux": 0.0}
 
-    async def slow_then_fast(arabic, langs, glossary="", *, use_cache=True):
+    async def slow_then_fast(arabic, langs, glossary="", *, context=None, use_cache=True):
         await asyncio.sleep(delays.get(arabic.strip(), 0.0))
         return {"arabic": arabic, "is_quran": False, "quran_ref": None,
                 "is_hadith": False, "translations": {l: f"[{l}] {arabic}" for l in langs}}

@@ -1,0 +1,35 @@
+{
+  "categories": {
+    "morning": [
+      {"ar": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "tr": {"fr": "Gloire à Allah et à Sa louange", "en": "Glory be to Allah and His praise", "nl": "Glorie aan Allah en Zijn lof", "ar": "سبحان الله وبحمده"}, "tgt": 100},
+      {"ar": "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ", "tr": {"fr": "Nous avons atteint le matin et la royauté appartient à Allah", "en": "We have reached the morning and the dominion belongs to Allah", "nl": "We zijn de ochtend ingegaan en het koningschap behoort aan Allah toe", "ar": "أصبحنا وأصبح الملك لله"}, "tgt": 1},
+      {"ar": "اللَّهُمَّ بِكَ أَصْبَحْنَا", "tr": {"fr": "Ô Allah, c'est par Toi que nous atteignons le matin", "en": "O Allah, by You we enter the morning", "nl": "O Allah, door U zijn wij de ochtend ingegaan", "ar": "اللهم بك أصبحنا"}, "tgt": 1},
+      {"ar": "سُبْحَانَ اللَّهِ", "tr": {"fr": "Gloire à Allah", "en": "Glory be to Allah", "nl": "Glorie aan Allah", "ar": "سبحان الله"}, "tgt": 100}
+    ],
+    "evening": [
+      {"ar": "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ", "tr": {"fr": "Nous avons atteint le soir et la royauté appartient à Allah", "en": "We have reached the evening and the dominion belongs to Allah", "nl": "We zijn de avond ingegaan en het koningschap behoort aan Allah toe", "ar": "أمسينا وأمسى الملك لله"}, "tgt": 1},
+      {"ar": "اللَّهُمَّ بِكَ أَمْسَيْنَا", "tr": {"fr": "Ô Allah, c'est par Toi que nous atteignons le soir", "en": "O Allah, by You we enter the evening", "nl": "O Allah, door U zijn wij de avond ingegaan", "ar": "اللهم بك أمسينا"}, "tgt": 1},
+      {"ar": "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ", "tr": {"fr": "Je cherche refuge auprès des paroles parfaites d'Allah contre le mal de Sa création", "en": "I seek refuge in the perfect words of Allah from the evil of what He created", "nl": "Ik zoek toevlucht in de volmaakte woorden van Allah tegen het kwaad van wat Hij schiep", "ar": "أعوذ بكلمات الله التامات من شر ما خلق"}, "tgt": 3}
+    ],
+    "post_prayer": [
+      {"ar": "أَسْتَغْفِرُ اللَّهَ", "tr": {"fr": "Je demande pardon à Allah", "en": "I seek forgiveness from Allah", "nl": "Ik vraag vergeving aan Allah", "ar": "أستغفر الله"}, "tgt": 3},
+      {"ar": "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ", "tr": {"fr": "Ô Allah, Tu es la Paix et de Toi vient la Paix", "en": "O Allah, You are Peace and from You comes Peace", "nl": "O Allah, U bent de Vrede en van U komt de Vrede", "ar": "اللهم أنت السلام ومنك السلام"}, "tgt": 1}
+    ],
+    "sleep": [
+      {"ar": "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا", "tr": {"fr": "C'est par Ton nom, ô Allah, que je meurs et que je vis", "en": "In Your name O Allah, I die and I live", "nl": "In Uw naam O Allah, ik sterf en ik leef", "ar": "باسمك اللهم أموت وأحيا"}, "tgt": 1},
+      {"ar": "سُبْحَانَ اللَّهِ", "tr": {"fr": "Gloire à Allah", "en": "Glory be to Allah", "nl": "Glorie aan Allah", "ar": "سبحان الله"}, "tgt": 33}
+    ],
+    "wake": [
+      {"ar": "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا", "tr": {"fr": "Louange à Allah qui nous a redonnés à la vie après nous avoir fait mourir", "en": "Praise be to Allah who gave us life after He made us die", "nl": "Lof zij Allah die ons leven gaf na ons te hebben laten sterven", "ar": "الحمد لله الذي أحيانا بعد ما أماتنا"}, "tgt": 1}
+    ],
+    "travel": [
+      {"ar": "سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ", "tr": {"fr": "Gloire à Celui qui nous a soumis ceci alors que nous n'aurions pas pu le faire", "en": "Glory to the One who subjected this to us while we could not have done it", "nl": "Glorie aan Degene die dit aan ons onderwierp terwijl wij het niet hadden kunnen doen", "ar": "سبحان الذي سخر لنا هذا وما كنا له مقرنين"}, "tgt": 1}
+    ],
+    "protection": [
+      {"ar": "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ", "tr": {"fr": "Je cherche refuge auprès des paroles parfaites d'Allah contre le mal de Sa création", "en": "I seek refuge in the perfect words of Allah from the evil of what He created", "nl": "Ik zoek toevlucht in de volmaakte woorden van Allah tegen het kwaad van wat Hij schiep", "ar": "أعوذ بكلمات الله التامات من شر ما خلق"}, "tgt": 3}
+    ],
+    "gratitude": [
+      {"ar": "الْحَمْدُ لِلَّهِ", "tr": {"fr": "Louange à Allah", "en": "Praise be to Allah", "nl": "Lof zij Allah", "ar": "الحمد لله"}, "tgt": 100}
+    ]
+  }
+}

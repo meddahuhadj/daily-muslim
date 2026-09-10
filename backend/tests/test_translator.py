@@ -133,6 +133,46 @@ async def test_missing_language_filled_empty(monkeypatch):
     assert r["translations"] == {"fr": "ok", "de": ""}
 
 
+async def test_context_is_injected_into_prompt(monkeypatch):
+    """Le contexte glissant doit figurer dans le message utilisateur, sans être
+    confondu avec le segment à traduire, et être borné à 3 segments."""
+    obj = {"arabic": "h", "is_quran": False,
+           "translations": [{"lang": "fr", "text": "traduc"}]}
+    captured = {}
+
+    def gh(url, kw):
+        captured["user"] = kw["json"]["contents"][0]["parts"][0]["text"]
+        return _gemini_ok(obj)
+
+    _use(monkeypatch, ("generativelanguage", gh))
+    ctx = [{"arabic": "أ", "translated": "A"}, {"arabic": "ب", "translated": "B"},
+           {"arabic": "ج", "translated": "C"}, {"arabic": "د", "translated": "D"}]
+    r = await translator.translate_segment("ها", ["fr"], context=ctx)
+    assert r["translations"]["fr"] == "traduc"
+    low = captured["user"]
+    assert "CONTEXTE" in low
+    assert "« أ »" not in low                                # le plus ancien tronqué
+    assert "« ب »" in low and "« ج »" in low and "« د »" in low  # 3 derniers conservés
+    assert "SEGMENT" in low and low.index("« ب »") < low.index("SEGMENT")
+    # le segment à traduire n'est pas dans le contexte
+    assert low.rstrip().endswith("ها")
+
+
+async def test_context_participates_in_cache_key(monkeypatch):
+    """Deux appels avec le même contexte partagent le cache ; un contexte différent
+    produit un nouvel appel fournisseur."""
+    obj = {"arabic": "x", "is_quran": False, "translations": [{"lang": "fr", "text": "ok"}]}
+    fake = _use(monkeypatch, ("generativelanguage", lambda u, k: _gemini_ok(obj)))
+    c1 = [{"arabic": "أ", "translated": "A"}]
+    c2 = [{"arabic": "أ", "translated": "A"}]
+    assert await translator.translate_segment("x", ["fr"], context=c1) is not None
+    assert await translator.translate_segment("x", ["fr"], context=c2) is not None
+    assert len(fake.calls) == 1
+    c3 = [{"arabic": "ب", "translated": "B"}]
+    assert await translator.translate_segment("x", ["fr"], context=c3) is not None
+    assert len(fake.calls) == 2
+
+
 async def test_cache_hit_avoids_second_call(monkeypatch):
     obj = {"arabic": "x", "is_quran": False, "translations": [{"lang": "fr", "text": "ok"}]}
     fake = _use(monkeypatch, ("generativelanguage", lambda u, k: _gemini_ok(obj)))
@@ -160,6 +200,28 @@ def test_system_prompt_is_the_real_one_not_the_fallback():
     assert len(translator.SYSTEM_PROMPT) > 800
     low = translator.SYSTEM_PROMPT.lower()
     assert "is_quran" in low and "quran_ref" in low
+
+
+def test_provider_status_reflects_configuration(monkeypatch):
+    # _reset donne GEMINI_KEYS=[gk1] et tout le reste vide
+    st = translator.provider_status()
+    assert st == {"gemini": True, "groq": False,
+                  "openrouter": False, "azure": False}
+    monkeypatch.setattr(translator, "GROQ_KEY", "grq")
+    monkeypatch.setattr(translator, "AZURE_KEY", "ak")
+    monkeypatch.setattr(translator, "AZURE_REGION", "westeurope")
+    st = translator.provider_status()
+    assert st == {"gemini": True, "groq": True,
+                  "openrouter": False, "azure": True}
+
+
+async def test_context_max_is_used_at_call_time(monkeypatch):
+    monkeypatch.setattr(translator, "CONTEXT_MAX", 5)
+    ctx = [{"arabic": f"seg{i}"} for i in range(6)]
+    norm = translator._normalize_context(ctx)
+    assert [c["arabic"] for c in norm] == ["seg1", "seg2", "seg3", "seg4", "seg5"]
+    monkeypatch.setattr(translator, "CONTEXT_MAX", 1)
+    assert translator._normalize_context(ctx) == [{"arabic": "seg5", "translated": ""}]
 
 
 async def test_stt_prefers_groq_then_gemini(monkeypatch):

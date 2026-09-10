@@ -1,0 +1,156 @@
+{
+  "generated_for": "Daily Muslim Life Assistant",
+  "version": 1,
+  "modules": {
+    "quran_study": [
+      {
+        "t": {
+          "fr": "Une régularité simple",
+          "en": "Simple regularity",
+          "nl": "Eenvoudige regelmaat",
+          "ar": "مواظبة بسيطة"
+        },
+        "b": {
+          "fr": "Choisissez un moment fixe chaque jour — même 5 à 10 minutes suffisent. La clé est la constance : gardez un rendez-vous quotidien avec le Coran, de préférence le matin ou après la prière de Fajr.",
+          "en": "Set a fixed moment each day — even 5 to 10 minutes is enough. Constancy is the key: keep a daily appointment with the Quran, ideally in the morning or after Fajr.",
+          "nl": "Kies elke dag een vast moment — zelfs 5 à 10 minuten volstaan. De sleutel is volhouden: houd dagelijks een afspraak met de Koran, liefst 's ochtends of na het Fajr-gebed.",
+          "ar": "اجعل وقتًا ثابتًا كل يوم — حتى ٥ إلى ١٠ دقائق تكفي. السر هو المواظبة: حافظ على موعد يومي مع القرآن، ويفضل صباحًا أو بعد صلاة الفجر."
+        }
+      },
+      {
+        "t": {
+          "fr": "Comprendre le sens",
+          "en": "Understand the meaning",
+          "nl": "De betekenis begrijpen",
+          "ar": "فهم المعنى"
+        },
+        "b": {
+          "fr": "Lire sans comprendre est insuffisant. Gardez à portée de main une traduction du sens pendant la lecture : cela transforme la lecture en méditation (tadabbur) et ancre les versets dans votre quotidien.",
+          "en": "Reading without understanding is not enough. Keep a translation of the meaning at hand while reading: it turns reading into reflection (tadabbur) and grounds the verses in your daily life.",
+          "nl": "Lezen zonder begrip is niet genoeg. Houd tijdens het lezen een betekenisvertaling bij de hand: zo wordt lezen tot nadenken (tadabbur) en krijgen de verzen betekenis in je dag.",
+          "ar": "القراءة بلا فهم غير كافية. أبقِ ترجمة المعنى في متناولك أثناء القراءة: فذلك يحوّل التلاوة إلى تدبّر ويرسخ الآيات في حياتك."
+        }
+      }
+    ],
+    "tajwid": [
+      {
+        "t": {
+          "fr": "Le nūn sākina et le tanwīn",
+          "en": "The nūn sākina and tanwīn",
+          "nl": "De nūn sākina en tanwīn",
+          "ar": "النون الساكنة والتنوين"
+        },
+        "b": {
+          "fr": "Selon la lettre suivante, quatre règles s'appliquent : idghām (fusion), iqlāb (transformation en mīm), ikhfā' (nasalisation légère) et izhār (articulation claire). Entraînez-vous sur de courtes sourates en écoutant un récitateur.",
+          "en": "Depending on the next letter, four rules apply: idghām (merging), iqlāb (changing to a mīm), ikhfā' (light nasalization) and izhār (clear articulation). Practice on short surahs while listening to a reciter.",
+          "nl": "Naargelang de volgende letter gelden vier regels: idghām (samensmelten), iqlāb (veranderen in een mīm), ikhfā' (lichte neusklank) en izhār (klare uitspraak). Oefen met korte soera's terwijl je naar een reciteerder luistert.",
+          "ar": "يتبع النون الساكنة والتنوين أربعة أحكام حسب الحرف التالي: الإدغام، والإقلاب، والإخفاء، والإظهار. تدرّب على السور القصيرة وأنت تستمع إلى قارئ."
+        }
+      },
+      {
+        "t": {
+          "fr": "Les allongements (madd)",
+          "en": "The madd (prolongations)",
+          "nl": "De madd (rekkingen)",
+          "ar": "المدود"
+        },
+        "b": {
+          "fr": "Le madd étire une lettre traitée. Le madd ṭabīʿī vaut 2 temps ; le madd wājib (devant une hamza) 4 ou 5 ; le madd lāzim 6. Écoutez la différence entre 2, 4 et 6 temps sur le même verset.",
+          "en": "The madd stretches a lengthened letter. The natural madd (ṭabīʿī) lasts 2 counts; the wājib madd (before a hamza) 4 or 5; the lāzim madd 6. Listen to the difference between 2, 4 and 6 counts on the same verse.",
+          "nl": "De madd rekt een verlengbare letter. De natuurlijke madd (ṭabīʿī) duurt 2 tellen; de wājib madd (vóór een hamza) 4 of 5; de lāzim madd 6. Beluister het verschil tussen 2, 4 en 6 tellen op hetzelfde vers.",
+          "ar": "المد هو إطالة الحرف القابل للمد. المد الطبيعي مقداره حركتان؛ والمد الواجب قبل الهمزة ٤ أو ٥؛ والمد اللازم ٦. استمع إلى الفرق بين حركتين وأربع وست على نفس الآية."
+        }
+      }
+    ],
+    "arabic": [
+      {
+        "t": {
+          "fr": "Les lettres au quotidien",
+          "en": "Letters in daily life",
+          "nl": "Letters in het dagelijks leven",
+          "ar": "الحروف في حياتك"
+        },
+        "b": {
+          "fr": "Vous connaissez déjà les 28 lettres. Entraînez-vous à lire les mots du quotidien (sous-titres, panneaux) et apprenez le sens des mots coraniques fréquents comme raḥma (miséricorde) et ṣabr (patience). Le vocabulaire coranique revient en boucle.",
+          "en": "You already know the 28 letters. Practice reading everyday words (subtitles, signs) and learn the meaning of frequent Quranic words such as raḥma (mercy) and ṣabr (patience). Quranic vocabulary repeats constantly.",
+          "nl": "Je kent al de 28 letters. Oefen met dagelijkse woorden (ondertitels, borden) en leer de betekenis van veelvoorkomende Koranwoorden zoals raḥma (barmhartigheid) en ṣabr (geduld). Koranisch vocabulaire herhaalt zich voortdurend.",
+          "ar": "تعرف الحروف الثمانية والعشرين بالفعل. تدرب على قراءة كلماتك اليومية (العناوين، اللافتات) وتعلم معاني الكلمات القرآنية المتكررة مثل الرحمة والصبر. فمفردات القرآن تتكرر باستمرار."
+        }
+      },
+      {
+        "t": {
+          "fr": "Les mots de la prière",
+          "en": "The words of the prayer",
+          "nl": "De woorden van het gebed",
+          "ar": "كلمات الصلاة"
+        },
+        "b": {
+          "fr": "Commencez par comprendre ce que vous récitez dans la prière : al-Fātiḥa, puis les invocations (rukūʿ, sujūd). Comprendre chaque mot change le lien avec la prière et nourrit la présence du cœur (khusūʿ).",
+          "en": "Start with the meaning of what you recite in prayer: al-Fātiḥa, then the invocations (rukūʿ, sujūd). Understanding each word changes your connection to the prayer and feeds presence of heart (khusūʿ).",
+          "nl": "Leer eerst de betekenis van wat je in het gebed reciteert: al-Fātiḥa, daarna de smeekbeden (rukūʿ, sujūd). Elk woord begrijpen verandert je band met het gebed en voeding van hart (khusūʿ).",
+          "ar": "ابدأ بفهم ما تقرؤه في الصلاة: الفاتحة، ثم أذكار الركوع والسجود. فهم كل كلمة يغير علاقتك بالصلاة ويغذي الخشوع."
+        }
+      }
+    ],
+    "memorize": [
+      {
+        "t": {
+          "fr": "La répétition gagnante",
+          "en": "Winning repetition",
+          "nl": "De winnende herhaling",
+          "ar": "التكرار الناجح"
+        },
+        "b": {
+          "fr": "Répétez chaque verset 5 à 10 fois à voix haute, puis enchaînez. Utilisez le « Plan de mémorisation » : définissez une plage de versets, écoutez-la, puis refaites les répétitions le même jour. Le lendemain, révisez avant de continuer.",
+          "en": "Repeat each verse 5 to 10 times aloud, then link them together. Use the Memorization planner: set a range of verses, listen to it, then repeat it the same day. The next day, review before moving on.",
+          "nl": "Herhaal elk vers 5 à 10 keer hardop en koppel ze daarna aan elkaar. Gebruik de geheugenplanner: stel een reeks verzen in, beluister ze en herhaal ze dezelfde dag. Herhaal de volgende dag vóór je verdergaat.",
+          "ar": "كرر كل آية ٥ إلى ١٠ مرات بصوت مسموع ثم وصّلها. استخدم «خطة الحفظ»: حدد نطاق آيات، اسمعه ثم أعد التكرار في اليوم نفسه. وفي الغد راجع قبل أن تتابع."
+        }
+      },
+      {
+        "t": {
+          "fr": "Petites étapes, grande régularité",
+          "en": "Small steps, steady pace",
+          "nl": "Kleine stappen, grote regelmaat",
+          "ar": "خطوات صغيرة ومواظبة"
+        },
+        "b": {
+          "fr": "Préférez trois versets bien mémorisés à une page survolée. Révisez à l'aube (Fajr) et réécoutez chaque soir. La mémorisation durable repose sur la répétition espacée, pas sur la vitesse.",
+          "en": "Prefer three well-memorized verses over a skimmed page. Review at dawn (Fajr) and listen again each evening. Durable memorization comes from spaced repetition, not speed.",
+          "nl": "Geef de voorkeur aan drie goed onthouden verzen boven een overgeslagen pagina. Herhaal bij zonsopgang (Fajr) en luister elke avond opnieuw. Blijvend memoriseren komt door gespreide herhaling, niet door snelheid.",
+          "ar": "فضّل ثلاث آيات متقنة على صفحة تتصفحها بسرعة. راجع عند الفجر واسمعه مرة أخرى كل مساء. الحفظ الراسخ يقوم على التكرار المتباعد لا على السرعة."
+        }
+      }
+    ],
+    "hadith": [
+      {
+        "t": {
+          "fr": "Le hadith : source de guidance",
+          "en": "Hadith: a source of guidance",
+          "nl": "Hadith: een bron van leiding",
+          "ar": "الحديث: مصدر هداية"
+        },
+        "b": {
+          "fr": "Outre le Coran, la Sunna (tradition du Prophète) est la deuxième source de la loi islamique. Les hadiths — paroles ou actes du Prophète — éclairent le sens des versets et complètent la guidance. Apprendre à reconnaître un hadith sahîh (fiable) des hadiths daʿīf (faibles) est une compétence essentielle.",
+          "en": "In addition to the Quran, the Sunna (Prophetic tradition) is the second source of Islamic law. Hadiths — sayings or actions of the Prophet — illuminate the meaning of verses and complete the guidance. Learning to distinguish a reliable (sahîh) hadith from weak (daʿīf) ones is an essential skill.",
+          "nl": "Naast de Koran is de Soenna (prophetische traditie) de tweede bron van de islamitische wet. Hadiths — woorden of daden van de Profeet — verduidelijken de betekenis van verzen en completeren de leiding. In staat zijn om een betrouwbare (sahîh) hadith te onderscheiden van een zwakke (daʿīf) is een essentiële vaardigheid.",
+          "ar": "إلى جانب القرآن، السنة هي Secondly في الفقه الإسلامي. الأحاديث - أقوال أو أفعل النبي - توضح معنى الآيات وتكمل الهداية. تعلم تمييز الحديث الصحيح من الضعيف مهارة أساسية."
+        }
+      },
+      {
+        "t": {
+          "fr": "Rechercher un hadith",
+          "en": "Searching a hadith",
+          "nl": "Een hadith doorzoeken",
+          "ar": "البحث في الحديث"
+        },
+        "b": {
+          "fr": "Utilisez la recherche de hadith (dans le pôle Apprentissage) pour trouver des hadiths par mot-clé : patience, prière, voisin, miséricorde. Cherchez en arabe pour les résultats les plus précis. Une recherche par « صبر » (patience) renvoie des hadiths classés par fiabilité.",
+          "en": "Use the hadith search (in the Learning hub) to find hadiths by keyword: patience, prayer, neighbour, mercy. Search in Arabic for the most precise results. A search for « ṣabr » (patience) returns hadiths ranked by reliability.",
+          "nl": "Gebruik de hadith-zoekfunctie (in het leercentrum) om hadiths te vinden per trefwoord: geduld, gebed, buren, barmhartigheid. Zoek in het Arabisch voor de meest nauwkeurige resultaten. Een Zoekopdracht voor « ṣabr » (geduld) geeft hadiths gerangschikt naar betrouwbaarheid.",
+          "ar": "استخدم بحث الحديث (في قسم Apprentissage) لإيجاد أحاديث بالكلمة المفتاحية: صبر، صلاة، جار، رحمة. ابحث بالعربية ل_precision.بحث « صبر » يُعيد أحاديث مرتبة بالموثوقية."
+        }
+      }
+    ]
+  }
+}

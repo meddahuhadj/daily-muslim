@@ -16,8 +16,9 @@ def fake_translate():
     """Retourne une fonction de traduction déterministe et son compteur d'appels."""
     calls = []
 
-    async def _t(arabic, langs, glossary="", *, use_cache=True):
-        calls.append({"arabic": arabic, "langs": list(langs), "glossary": glossary})
+    async def _t(arabic, langs, glossary="", *, context=None, use_cache=True):
+        calls.append({"arabic": arabic, "langs": list(langs), "glossary": glossary,
+                      "context": context})
         low = arabic.strip()
         is_q = low.startswith("قل هو الله") or "الحمد لله رب العالمين" in low
         return {
@@ -47,7 +48,7 @@ def app_client(monkeypatch, fake_translate):
     monkeypatch.setattr(main.translator, "last_error", lambda: "quota")
 
     main.ROOMS.clear()
-    main._rl_hits.clear()
+    main.session_limiter.reset()
     with TestClient(main.app) as client:
         client._fake = fake_translate
         yield client
