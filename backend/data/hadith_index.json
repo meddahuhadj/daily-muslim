@@ -1,21 +1,6 @@
 {
   "hadiths": [
     {
-      "collection": "bukhari",
-      "text": "إنَّما الأَمَلُ عَلَى الجَنَّةِ، وَالخَوفُ مِنَ النَّارِ",
-      "ref": "Sahih al-Bukhari 6231"
-    },
-    {
-      "collection": "bukhari",
-      "text": "الدُّعَاءُ هُوَ العِبَادَةُ",
-      "ref": "Sahih al-Bukhari 6340"
-    },
-    {
-      "collection": "bukhari",
-      "text": "مَنْ رَأَى مِنْكُمْ مُنْكَرًا فَلْيُغَيِّرْهُ بِيَدِهِ",
-      "ref": "Sahih al-Bukhari 249"
-    },
-    {
       "collection": "muslim",
       "text": "بِنَاءِ الرَّجُلِ فَوْقَ الرَّجُلِ فِي السَّمَاءِ",
       "ref": "Sahih Muslim 263"
@@ -56,11 +41,6 @@
       "ref": "Sunan an-Nasa'i al-Sharif 1293"
     },
     {
-      "collection": "bukhari",
-      "text": "الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ",
-      "ref": "Sahih al-Bukhari 1162"
-    },
-    {
       "collection": "muslim",
       "text": "القَرْآنُ يَقْرَأُ عَلَيْكُمْ بِأَعْمَالِكُمْ",
       "ref": "Sahih Muslim 1853"
@@ -94,11 +74,6 @@
       "collection": "nasai_sharif",
       "text": "اللَّهُمَّ اجْعَلْنِي مِنَ التَّابِينَ",
       "ref": "Sunan an-Nasa'i al-Sharif 1295"
-    },
-    {
-      "collection": "bukhari",
-      "text": "الدُّعَاءُ يَقْطَعُ الْبَلَاءَ",
-      "ref": "Sahih al-Bukhari 6341"
     }
   ]
 }

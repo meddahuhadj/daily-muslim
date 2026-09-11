@@ -13,9 +13,12 @@ import unicodedata
 from pathlib import Path
 
 _INDEX_PATH = Path(__file__).resolve().parent / "data" / "hadith_index.json"
+# Sahih al-Bukhari complet (texte arabe + traduction francaise), fichier a part
+# car volumineux (~7600 hadiths) : voir scripts/build_hadith_bukhari.py.
+_BUKHARI_PATH = Path(__file__).resolve().parent / "data" / "hadith_bukhari.json"
 
 _DIAC = re.compile(
-    "[ؐ-ًؚ-ٰٟۖ-ۜ۟-ۨ"
+    "[ؐ-ًؚ-ٰٟۖ-ۜ۟-ۨ"
     "۪-ۭ࣓-ࣿـ]"
 )
 _NOT_LETTER = re.compile("[^ء-ي]")
@@ -49,14 +52,16 @@ def _load() -> bool:
     if _loaded:
         return bool(_refs)
     _loaded = True
-    try:
-        data = json.loads(_INDEX_PATH.read_text(encoding="utf-8"))
-        _refs = data.get("hadiths", [])
-        _norm = [normalize(h.get("text", "")) for h in _refs]
-    except (OSError, ValueError) as exc:
-        import logging
-        logging.getLogger("dailymuslim.hadith_index").warning("hadith index: %r", exc)
-        _refs, _norm = [], []
+    refs: list[dict] = []
+    for path in (_INDEX_PATH, _BUKHARI_PATH):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            refs.extend(data.get("hadiths", []))
+        except (OSError, ValueError) as exc:
+            import logging
+            logging.getLogger("dailymuslim.hadith_index").warning("hadith index %s: %r", path.name, exc)
+    _refs = refs
+    _norm = [normalize(h.get("text", "")) for h in _refs]
     return bool(_refs)
 
 

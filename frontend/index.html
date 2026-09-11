@@ -4677,14 +4677,20 @@ async function hadithSearch(q, collection){
         box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
         return;
       }
-      box.innerHTML = results.map(h => `
+      box.innerHTML = results.map(h => {
+        const fr = h.translations && h.translations.fr;
+        const book = h.book_name ? `<span style="font-size:.68rem; color:var(--muted)">· ${escapeHtml(h.book_name)}</span>` : "";
+        return `
         <div class="hadith-card" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px; cursor:pointer">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap">
             <span style="font-size:.72rem; color:var(--accent)">${escapeHtml(h.ref || h.collection_name || "")}</span>
-            <span style="font-size:.68rem; color:var(--muted)">${escapeHtml(h.collection || "")}</span>
+            ${book}
+            <span style="font-size:.68rem; color:var(--muted); margin-left:auto">${escapeHtml(h.collection_name || h.collection || "")}</span>
           </div>
-          <div class="ar-text" style="font-size:1.05rem">${escapeHtml(h.text)}</div>
-        </div>`).join("");
+          <div class="ar-text" dir="rtl" style="font-size:1.05rem">${escapeHtml(h.text)}</div>
+          ${fr ? `<div style="font-size:.88rem; color:var(--muted); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border)">${escapeHtml(fr)}</div>` : ""}
+        </div>`;
+      }).join("");
     } catch(err) {
       box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
     }
