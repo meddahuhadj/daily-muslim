@@ -24,6 +24,16 @@ services:
       # le dashboard Render (Environment).
       - key: GEMINI_MODEL
         value: gemini-2.5-flash-lite
+      # Facultatif mais recommandé : fournisseurs de repli si Gemini tombe en
+      # quota (chaîne de repli multi-fournisseurs, voir backend/.env.example).
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: AZURE_TRANSLATOR_KEY
+        sync: false
+      - key: AZURE_TRANSLATOR_REGION
+        sync: false
       # Facultatif : langues traduites par défaut (ex: "fr,en,nl")
       - key: DEFAULT_TARGET_LANGS
         sync: false
