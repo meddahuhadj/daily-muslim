@@ -69,6 +69,38 @@ def available() -> bool:
     return _load()
 
 
+def books(collection: str) -> list[dict]:
+    """Liste des livres/chapitres d'une collection (numero + titre + nb de hadiths),
+    dans l'ordre du recueil. Utilise pour un navigateur par chapitre (ex: Bukhari)."""
+    if not _load():
+        return []
+    order: list[int] = []
+    counts: dict[int, int] = {}
+    names: dict[int, str] = {}
+    for h in _refs:
+        if h.get("collection") != collection:
+            continue
+        b = h.get("book")
+        if b is None:
+            continue
+        if b not in counts:
+            order.append(b)
+            names[b] = h.get("book_name", "")
+        counts[b] = counts.get(b, 0) + 1
+    return [{"book": b, "name": names[b], "count": counts[b]} for b in order]
+
+
+def list_by(collection: str, book: int | None = None, offset: int = 0, limit: int = 30) -> tuple[list[dict], int]:
+    """Hadiths d'une collection (et, en option, d'un livre precis), dans l'ordre
+    du recueil — pour parcourir un chapitre sans taper de recherche.
+    Retourne (page, total)."""
+    if not _load():
+        return [], 0
+    pool = [h for h in _refs if h.get("collection") == collection
+            and (book is None or h.get("book") == book)]
+    return pool[offset:offset + limit], len(pool)
+
+
 def search(q: str, limit: int = 30) -> list[dict]:
     """Recherche un terme dans les hadiths normalises. Retourne une liste de results."""
     if not _load():

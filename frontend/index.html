@@ -1100,6 +1100,11 @@
           <div class="lc-title" data-i18n="learning_hadith">Hadith</div>
           <div class="lc-desc" data-i18n="learning_hadith_desc">Tradition du Prophète</div>
         </button>
+        <button class="learning-card" data-module="bukhari" type="button">
+          <div class="lc-icon">📚</div>
+          <div class="lc-title" data-i18n="learning_bukhari">Sahih al-Bukhari</div>
+          <div class="lc-desc" data-i18n="learning_bukhari_desc">Recueil authentique complet</div>
+        </button>
       </div>
 
       <div id="hadithSearchWrap" class="hidden" style="margin-top:12px">
@@ -1111,6 +1116,18 @@
           </select>
         </div>
         <div id="hadithSearchResults" style="margin-top:10px; max-height:360px; overflow-y:auto"></div>
+      </div>
+
+      <div id="bukhariWrap" class="hidden" style="margin-top:12px">
+        <div class="row" style="gap:8px; flex-wrap:wrap">
+          <input id="bukhariSearchInput" type="text" placeholder="🔍 Rechercher dans Sahih al-Bukhari (arabe)…"
+                 style="flex:1; min-width:200px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:.9rem" />
+          <select id="bukhariBook" style="padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); max-width:100%">
+            <option value="" data-i18n="bukhari_all_books">Tous les chapitres</option>
+          </select>
+          <button class="secondary" id="btnBukhariRandom" type="button" data-i18n="bukhari_random">🎲 Hadith au hasard</button>
+        </div>
+        <div id="bukhariResults" style="margin-top:10px; max-height:360px; overflow-y:auto"></div>
       </div>
 
       <div id="learningContent" class="hidden" style="margin-top:12px"></div>
@@ -2127,6 +2144,8 @@ Object.assign(I18N.fr,{
   prayer_offsets_title:"Offsets de rappel par prière (minutes avant)",
   set_adhan_sound:"Son d'appel (adhan) pour les rappels prière",
   learning_hadith:"Hadith", learning_hadith_desc:"Tradition du Prophète",
+  learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Recueil authentique complet",
+  bukhari_all_books:"Tous les chapitres", bukhari_random:"🎲 Hadith au hasard",
   hadith_no_result:"Aucun résultat", hadith_error:"Erreur de recherche",
   prayer_remind_msg:"Prière dans {m} min", notif_unavailable:"Notifications non supportées sur cet appareil.",
   notif_denied:"Notifications refusées — autorisez-les dans les réglages du navigateur.",
@@ -2217,6 +2236,8 @@ Object.assign(I18N.en,{
   prayer_offsets_title:"Prayer reminder offsets (minutes before)",
   set_adhan_sound:"Adhan sound for prayer reminders",
   learning_hadith:"Hadith", learning_hadith_desc:"Prophetic tradition",
+  learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Complete authentic collection",
+  bukhari_all_books:"All chapters", bukhari_random:"🎲 Random hadith",
   hadith_no_result:"No results", hadith_error:"Search error",
   nav_progress:"Progress",
   progress_h:"My progress", progress_streak:"consecutive days",
@@ -3131,6 +3152,8 @@ Object.assign(I18N.nl,{
   kids_words_hint:"Zet de letters samen om een eenvoudig woord te vormen.",
   kids_words_ok:"Goed zo!", kids_words_retry:"Probeer opnieuw!",
   learning_hadith:"Hadith", learning_hadith_desc:"Overlevering van de Profeet",
+  learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Volledige authentieke verzameling",
+  bukhari_all_books:"Alle hoofdstukken", bukhari_random:"🎲 Willekeurige hadith",
   nav_progress:"Vooruitgang",
   prayer_offsets_title:"Herinneringsverschuivingen per gebed (minuten vooraf)",
   progress_best:"Beste reeks", progress_h:"Mijn vooruitgang", progress_quran_read:"Laatste lezing",
@@ -3149,6 +3172,8 @@ Object.assign(I18N.ar,{
   kids_words_hint:"ركّب الحروف لتكوين كلمة بسيطة.",
   kids_words_ok:"أحسنت!", kids_words_retry:"حاول مجددًا!",
   learning_hadith:"حديث", learning_hadith_desc:"سنّة النبي",
+  learning_bukhari:"صحيح البخاري", learning_bukhari_desc:"المجموعة الصحيحة الكاملة",
+  bukhari_all_books:"كل الأبواب", bukhari_random:"🎲 حديث عشوائي",
   nav_progress:"التقدّم",
   prayer_offsets_title:"توقيت التذكير قبل كل صلاة (بالدقائق)",
   progress_best:"أفضل سلسلة", progress_h:"تقدّمي", progress_quran_read:"آخر قراءة",
@@ -4626,14 +4651,26 @@ const LEARNING_MODULES = {
 function learningRenderModule(id){
   const box = $("#learningContent"); if(!box) return;
   const mod=LEARNING_MODULES[id];
-  let hadithWrap = $("#hadithSearchWrap");
+  const hadithWrap = $("#hadithSearchWrap");
+  const bukhariWrap = $("#bukhariWrap");
   if(id==="hadith"){
-    // Affiche l'interface de recherche de hadith
+    // Affiche l'interface de recherche de hadith (toutes collections)
     if(hadithWrap) hadithWrap.classList.remove("hidden");
+    if(bukhariWrap) bukhariWrap.classList.add("hidden");
     box.classList.add("hidden"); box.innerHTML="";
     return;
   }
+  if(id==="bukhari"){
+    // Module dédié : Sahih al-Bukhari (parcours par chapitre + recherche + hasard)
+    if(bukhariWrap) bukhariWrap.classList.remove("hidden");
+    if(hadithWrap) hadithWrap.classList.add("hidden");
+    box.classList.add("hidden"); box.innerHTML="";
+    bukhariPopulateBooks();
+    if(!$("#bukhariResults").innerHTML) bukhariBrowse("");
+    return;
+  }
   if(hadithWrap) hadithWrap.classList.add("hidden");
+  if(bukhariWrap) bukhariWrap.classList.add("hidden");
   if(!mod){ box.classList.add("hidden"); box.innerHTML=""; return; }
   box.classList.remove("hidden");
   const cur=uiLang;
@@ -4660,6 +4697,20 @@ document.querySelectorAll(".learning-card").forEach(c=>c.addEventListener("click
 }));
 
 /* --- Recherche de hadith --- */
+function hadithCardHtml(h){
+  const fr = h.translations && h.translations.fr;
+  const book = h.book_name ? `<span style="font-size:.68rem; color:var(--muted)">· ${escapeHtml(h.book_name)}</span>` : "";
+  return `
+    <div class="hadith-card" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px; cursor:pointer">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap">
+        <span style="font-size:.72rem; color:var(--accent)">${escapeHtml(h.ref || h.collection_name || "")}</span>
+        ${book}
+        <span style="font-size:.68rem; color:var(--muted); margin-left:auto">${escapeHtml(h.collection_name || h.collection || "")}</span>
+      </div>
+      <div class="ar-text" dir="rtl" style="font-size:1.05rem">${escapeHtml(h.text)}</div>
+      ${fr ? `<div style="font-size:.88rem; color:var(--muted); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border)">${escapeHtml(fr)}</div>` : ""}
+    </div>`;
+}
 let _hadithTimer = null;
 async function hadithSearch(q, collection){
   const box = $("#hadithSearchResults");
@@ -4677,25 +4728,90 @@ async function hadithSearch(q, collection){
         box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
         return;
       }
-      box.innerHTML = results.map(h => {
-        const fr = h.translations && h.translations.fr;
-        const book = h.book_name ? `<span style="font-size:.68rem; color:var(--muted)">· ${escapeHtml(h.book_name)}</span>` : "";
-        return `
-        <div class="hadith-card" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px; cursor:pointer">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap">
-            <span style="font-size:.72rem; color:var(--accent)">${escapeHtml(h.ref || h.collection_name || "")}</span>
-            ${book}
-            <span style="font-size:.68rem; color:var(--muted); margin-left:auto">${escapeHtml(h.collection_name || h.collection || "")}</span>
-          </div>
-          <div class="ar-text" dir="rtl" style="font-size:1.05rem">${escapeHtml(h.text)}</div>
-          ${fr ? `<div style="font-size:.88rem; color:var(--muted); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border)">${escapeHtml(fr)}</div>` : ""}
-        </div>`;
-      }).join("");
+      box.innerHTML = results.map(hadithCardHtml).join("");
     } catch(err) {
       box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
     }
   }, 250);
 }
+
+/* --- Module dédié : Sahih al-Bukhari (parcours par chapitre + recherche + hasard) --- */
+let _bukhariTimer = null;
+async function bukhariPopulateBooks(){
+  const sel = $("#bukhariBook");
+  if(!sel || sel.dataset.loaded) return;
+  sel.dataset.loaded = "1";
+  try {
+    const r = await fetch("/api/hadith/books?collection=bukhari");
+    const data = await r.json();
+    (data.books || []).forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.book; opt.textContent = `${b.book}. ${b.name || "—"} (${b.count})`;
+      sel.appendChild(opt);
+    });
+  } catch(err) { /* silencieux : la recherche reste utilisable sans la liste */ }
+}
+async function bukhariBrowse(book){
+  const box = $("#bukhariResults");
+  if(!box) return;
+  box.innerHTML = `<div style="padding:10px;color:var(--muted)">…</div>`;
+  try {
+    let url = "/api/hadith/list?collection=bukhari&limit=30";
+    if(book) url += `&book=${encodeURIComponent(book)}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    const results = data.results || [];
+    if(!results.length){
+      box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
+      return;
+    }
+    box.innerHTML = results.map(hadithCardHtml).join("");
+  } catch(err) {
+    box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+  }
+}
+function bukhariSearch(q, book){
+  const box = $("#bukhariResults");
+  if(!box) return;
+  if(!q.trim()){ bukhariBrowse(book); return; }
+  clearTimeout(_bukhariTimer);
+  _bukhariTimer = setTimeout(async ()=>{
+    try {
+      let url = `/api/hadith/search?q=${encodeURIComponent(q)}&limit=30&collection=bukhari`;
+      if(book) url += `&book=${encodeURIComponent(book)}`;
+      const r = await fetch(url);
+      const data = await r.json();
+      const results = data.results || [];
+      if(!results.length){
+        box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
+        return;
+      }
+      box.innerHTML = results.map(hadithCardHtml).join("");
+    } catch(err) {
+      box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+    }
+  }, 250);
+}
+async function bukhariRandom(){
+  const box = $("#bukhariResults");
+  if(!box) return;
+  try {
+    const r = await fetch("/api/hadith/random?collection=bukhari");
+    const h = await r.json();
+    box.innerHTML = hadithCardHtml(h);
+  } catch(err) {
+    box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+  }
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  bukhariPopulateBooks();
+  const input = $("#bukhariSearchInput");
+  const sel = $("#bukhariBook");
+  if(input) input.addEventListener("input", ()=> bukhariSearch(input.value.trim(), sel ? sel.value : ""));
+  if(sel) sel.addEventListener("change", ()=> bukhariSearch(input ? input.value.trim() : "", sel.value));
+  const rndBtn = $("#btnBukhariRandom");
+  if(rndBtn) rndBtn.addEventListener("click", bukhariRandom);
+});
 
 async function hadithPopulateCollections(){
   const sel = $("#hadithCollection");
