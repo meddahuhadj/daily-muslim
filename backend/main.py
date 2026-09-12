@@ -555,7 +555,7 @@ app.add_middleware(SameOriginCORSMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Routers modulaires (Daily Muslim Life Assistant)
-from routers import adhkar, assistant, hadith, learning, location, prayer, quran  # noqa: E402
+from routers import adhkar, assistant, hadith, hisn_muslim, learning, location, prayer, quran  # noqa: E402
 
 app.include_router(prayer.router)
 app.include_router(assistant.router)
@@ -564,6 +564,7 @@ app.include_router(location.router)
 app.include_router(learning.router)
 app.include_router(quran.router)
 app.include_router(hadith.router)
+app.include_router(hisn_muslim.router)
 
 
 # ----------------------------- REST --------------------------------------- #

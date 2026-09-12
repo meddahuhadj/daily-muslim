@@ -1028,6 +1028,20 @@
 
       <div class="adhkar-list hidden" id="adhkarList"></div>
     </div>
+
+    <div class="card islamic-pattern" style="margin-top:10px">
+      <h3 class="center" style="color:var(--accent3); margin:0 0 6px">📖 <span data-i18n="hisn_h">Hisn al-Muslim — recueil complet</span></h3>
+      <p class="muted center" data-i18n="hisn_hint" style="font-size:.8rem; margin:0 0 10px">132 chapitres, 267 invocations authentiques (arabe + anglais).</p>
+      <div class="row" style="gap:8px; flex-wrap:wrap">
+        <select id="hisnBook" style="flex:1; min-width:200px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text)">
+          <option value="" data-i18n="hisn_choose">Choisir un chapitre…</option>
+        </select>
+        <button class="secondary" id="btnHisnRandom" type="button" data-i18n="hisn_random">🎲 Doua au hasard</button>
+      </div>
+      <input id="hisnSearchInput" type="text" placeholder="🔍 Rechercher une invocation (arabe)…"
+             style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:.9rem; box-sizing:border-box" />
+      <div id="hisnResults" style="margin-top:10px; max-height:420px; overflow-y:auto"></div>
+    </div>
   </section>
 
   <!-- ====================== QIBLA (écran complet) ====================== -->
@@ -2147,6 +2161,8 @@ Object.assign(I18N.fr,{
   learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Recueil authentique complet",
   bukhari_all_books:"Tous les chapitres", bukhari_random:"🎲 Hadith au hasard",
   hadith_no_result:"Aucun résultat", hadith_error:"Erreur de recherche",
+  hisn_h:"Hisn al-Muslim — recueil complet", hisn_hint:"132 chapitres, 267 invocations authentiques (arabe + anglais).",
+  hisn_choose:"Choisir un chapitre…", hisn_random:"🎲 Doua au hasard",
   prayer_remind_msg:"Prière dans {m} min", notif_unavailable:"Notifications non supportées sur cet appareil.",
   notif_denied:"Notifications refusées — autorisez-les dans les réglages du navigateur.",
   tts_play:"Écouter la réponse",
@@ -2239,6 +2255,8 @@ Object.assign(I18N.en,{
   learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Complete authentic collection",
   bukhari_all_books:"All chapters", bukhari_random:"🎲 Random hadith",
   hadith_no_result:"No results", hadith_error:"Search error",
+  hisn_h:"Hisn al-Muslim — complete collection", hisn_hint:"132 chapters, 267 authentic supplications (Arabic + English).",
+  hisn_choose:"Choose a chapter…", hisn_random:"🎲 Random dua",
   nav_progress:"Progress",
   progress_h:"My progress", progress_streak:"consecutive days",
   progress_streak_zero:"Do an activity today to start a streak.",
@@ -3154,6 +3172,8 @@ Object.assign(I18N.nl,{
   learning_hadith:"Hadith", learning_hadith_desc:"Overlevering van de Profeet",
   learning_bukhari:"Sahih al-Bukhari", learning_bukhari_desc:"Volledige authentieke verzameling",
   bukhari_all_books:"Alle hoofdstukken", bukhari_random:"🎲 Willekeurige hadith",
+  hisn_h:"Hisn al-Muslim — volledige verzameling", hisn_hint:"132 hoofdstukken, 267 authentieke smeekbeden (Arabisch + Engels).",
+  hisn_choose:"Kies een hoofdstuk…", hisn_random:"🎲 Willekeurige smeekbede",
   nav_progress:"Vooruitgang",
   prayer_offsets_title:"Herinneringsverschuivingen per gebed (minuten vooraf)",
   progress_best:"Beste reeks", progress_h:"Mijn vooruitgang", progress_quran_read:"Laatste lezing",
@@ -3174,6 +3194,8 @@ Object.assign(I18N.ar,{
   learning_hadith:"حديث", learning_hadith_desc:"سنّة النبي",
   learning_bukhari:"صحيح البخاري", learning_bukhari_desc:"المجموعة الصحيحة الكاملة",
   bukhari_all_books:"كل الأبواب", bukhari_random:"🎲 حديث عشوائي",
+  hisn_h:"حصن المسلم — المجموعة الكاملة", hisn_hint:"132 بابًا، 267 دعاءً صحيحًا (عربي + إنجليزي).",
+  hisn_choose:"اختر بابًا…", hisn_random:"🎲 دعاء عشوائي",
   nav_progress:"التقدّم",
   prayer_offsets_title:"توقيت التذكير قبل كل صلاة (بالدقائق)",
   progress_best:"أفضل سلسلة", progress_h:"تقدّمي", progress_quran_read:"آخر قراءة",
@@ -4811,6 +4833,95 @@ document.addEventListener("DOMContentLoaded", ()=>{
   if(sel) sel.addEventListener("change", ()=> bukhariSearch(input ? input.value.trim() : "", sel.value));
   const rndBtn = $("#btnBukhariRandom");
   if(rndBtn) rndBtn.addEventListener("click", bukhariRandom);
+});
+
+/* --- Hisn al-Muslim complet (132 chapitres / 267 invocations, arabe + anglais) --- */
+function hisnCardHtml(d){
+  const book = d.book_name_en ? `<span style="font-size:.68rem; color:var(--muted)">· ${escapeHtml(d.book_name_en)}</span>` : "";
+  const repeat = d.repeat && d.repeat > 1 ? `<span style="font-size:.68rem; color:var(--accent3)">×${d.repeat}</span>` : "";
+  const translit = d.transliteration ? `<div style="font-size:.8rem; color:var(--muted); font-style:italic; margin-top:6px">${escapeHtml(d.transliteration)}</div>` : "";
+  const virtue = d.virtue ? `<div style="font-size:.78rem; color:var(--accent3); margin-top:6px">✨ ${escapeHtml(d.virtue)}</div>` : "";
+  const reference = d.reference ? `<div style="font-size:.72rem; color:var(--muted); margin-top:4px">📚 ${escapeHtml(d.reference)}</div>` : "";
+  return `
+    <div class="hadith-card" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap">
+        <span style="font-size:.72rem; color:var(--accent)">Hisn al-Muslim ${escapeHtml(String(d.number||""))}</span>
+        ${book} ${repeat}
+      </div>
+      <div class="ar-text" dir="rtl" style="font-size:1.05rem">${escapeHtml(d.ar)}</div>
+      ${translit}
+      <div style="font-size:.88rem; color:var(--muted); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border)">${escapeHtml(d.en)}</div>
+      ${virtue}${reference}
+    </div>`;
+}
+async function hisnPopulateBooks(){
+  const sel = $("#hisnBook");
+  if(!sel || sel.dataset.loaded) return;
+  sel.dataset.loaded = "1";
+  try {
+    const r = await fetch("/api/hisn/categories");
+    const data = await r.json();
+    (data.categories || []).forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.number; opt.textContent = `${c.number}. ${c.en} (${c.count})`;
+      sel.appendChild(opt);
+    });
+  } catch(err) { /* silencieux */ }
+}
+async function hisnBrowse(book){
+  const box = $("#hisnResults");
+  if(!box) return;
+  if(!book){ box.innerHTML = ""; return; }
+  box.innerHTML = `<div style="padding:10px;color:var(--muted)">…</div>`;
+  try {
+    const r = await fetch(`/api/hisn/category/${encodeURIComponent(book)}`);
+    const data = await r.json();
+    const results = data.duas || [];
+    box.innerHTML = results.length
+      ? results.map(hisnCardHtml).join("")
+      : `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
+  } catch(err) {
+    box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+  }
+}
+let _hisnTimer = null;
+function hisnSearch(q){
+  const box = $("#hisnResults");
+  if(!box) return;
+  if(!q.trim()){ const sel=$("#hisnBook"); hisnBrowse(sel ? sel.value : ""); return; }
+  clearTimeout(_hisnTimer);
+  _hisnTimer = setTimeout(async ()=>{
+    try {
+      const r = await fetch(`/api/hisn/search?q=${encodeURIComponent(q)}&limit=30`);
+      const data = await r.json();
+      const results = data.results || [];
+      box.innerHTML = results.length
+        ? results.map(hisnCardHtml).join("")
+        : `<div style="padding:10px;color:var(--muted)">${t("hadith_no_result") || "Aucun résultat"}</div>`;
+    } catch(err) {
+      box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+    }
+  }, 250);
+}
+async function hisnRandom(){
+  const box = $("#hisnResults");
+  if(!box) return;
+  try {
+    const r = await fetch("/api/hisn/random");
+    const d = await r.json();
+    box.innerHTML = hisnCardHtml(d);
+  } catch(err) {
+    box.innerHTML = `<div style="padding:10px;color:var(--muted)">${t("hadith_error") || "Erreur"}</div>`;
+  }
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  hisnPopulateBooks();
+  const input = $("#hisnSearchInput");
+  const sel = $("#hisnBook");
+  if(input) input.addEventListener("input", ()=> hisnSearch(input.value.trim()));
+  if(sel) sel.addEventListener("change", ()=>{ if(input) input.value=""; hisnBrowse(sel.value); });
+  const rndBtn = $("#btnHisnRandom");
+  if(rndBtn) rndBtn.addEventListener("click", hisnRandom);
 });
 
 async function hadithPopulateCollections(){
