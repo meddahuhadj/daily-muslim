@@ -1,16 +1,6 @@
 {
   "hadiths": [
     {
-      "collection": "muslim",
-      "text": "بِنَاءِ الرَّجُلِ فَوْقَ الرَّجُلِ فِي السَّمَاءِ",
-      "ref": "Sahih Muslim 263"
-    },
-    {
-      "collection": "muslim",
-      "text": "الإِسْلَامُ بِالإِيمَانِ وَالعَمَلِ الصَّالِحِ",
-      "ref": "Sahih Muslim 161"
-    },
-    {
       "collection": "tirmidhi",
       "text": "الدُّنْيَا سُجُونُ الَّذِينَ كَفَرُوا",
       "ref": "Jami' at-Tirmidhi 2077"
@@ -39,11 +29,6 @@
       "collection": "nasai_sharif",
       "text": "اللَّهُمَّ اجْعَلْنِي مِنَ الَّذِينَ يَذْكُرُونَكَ كَثِيرًا",
       "ref": "Sunan an-Nasa'i al-Sharif 1293"
-    },
-    {
-      "collection": "muslim",
-      "text": "القَرْآنُ يَقْرَأُ عَلَيْكُمْ بِأَعْمَالِكُمْ",
-      "ref": "Sahih Muslim 1853"
     },
     {
       "collection": "tirmidhi",

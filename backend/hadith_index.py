@@ -13,9 +13,11 @@ import unicodedata
 from pathlib import Path
 
 _INDEX_PATH = Path(__file__).resolve().parent / "data" / "hadith_index.json"
-# Sahih al-Bukhari complet (texte arabe + traduction francaise), fichier a part
-# car volumineux (~7600 hadiths) : voir scripts/build_hadith_bukhari.py.
+# Sahih al-Bukhari et Sahih Muslim complets (texte arabe + traduction
+# francaise), fichiers a part car volumineux (~7600 hadiths chacun) :
+# voir scripts/build_hadith_bukhari.py et build_hadith_muslim.py.
 _BUKHARI_PATH = Path(__file__).resolve().parent / "data" / "hadith_bukhari.json"
+_MUSLIM_PATH = Path(__file__).resolve().parent / "data" / "hadith_muslim.json"
 
 _DIAC = re.compile(
     "[ؐ-ًؚ-ٰٟۖ-ۜ۟-ۨ"
@@ -53,7 +55,7 @@ def _load() -> bool:
         return bool(_refs)
     _loaded = True
     refs: list[dict] = []
-    for path in (_INDEX_PATH, _BUKHARI_PATH):
+    for path in (_INDEX_PATH, _BUKHARI_PATH, _MUSLIM_PATH):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             refs.extend(data.get("hadiths", []))
@@ -71,10 +73,9 @@ def available() -> bool:
 
 def books(collection: str) -> list[dict]:
     """Liste des livres/chapitres d'une collection (numero + titre + nb de hadiths),
-    dans l'ordre du recueil. Utilise pour un navigateur par chapitre (ex: Bukhari)."""
+    tries par numero. Utilise pour un navigateur par chapitre (ex: Bukhari, Muslim)."""
     if not _load():
         return []
-    order: list[int] = []
     counts: dict[int, int] = {}
     names: dict[int, str] = {}
     for h in _refs:
@@ -83,11 +84,9 @@ def books(collection: str) -> list[dict]:
         b = h.get("book")
         if b is None:
             continue
-        if b not in counts:
-            order.append(b)
-            names[b] = h.get("book_name", "")
+        names.setdefault(b, h.get("book_name", ""))
         counts[b] = counts.get(b, 0) + 1
-    return [{"book": b, "name": names[b], "count": counts[b]} for b in order]
+    return [{"book": b, "name": names[b], "count": counts[b]} for b in sorted(counts)]
 
 
 def list_by(collection: str, book: int | None = None, offset: int = 0, limit: int = 30) -> tuple[list[dict], int]:
